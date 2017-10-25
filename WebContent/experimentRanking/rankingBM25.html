@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Basic client to run experiments with ElasticSearch as search engine.</title>
-<link rel='stylesheet' href='../css/basic.css'>
-<script src='js/ranking.js'></script>
+<link rel='stylesheet' href='../css/general.css'>
+<script src='../js/treatments.js'></script>
 </head>
-<body onload='init()'>
+<body onload="initTreatment('59ca668f2ada012eec5088ee','bm25');">
 <div id='searchblock' style='display: block;'>
 <div  class='outer'>
 	<div class='setup'>
@@ -16,7 +16,7 @@
 	<h2>Searching functionalities powered by Elastic Search</h2>
 	
 	<div class='search'>
-		<img id='biglogo' src='img/elasticlogo.png'>
+		<img id='biglogo' src='../img/elasticlogo.png'>
 		<form onsubmit='event.preventDefault();searchMainWindow();'>
 			<input id='searchinput' type='text' name='searchbox' size='50' value=''>
 			<input type='submit' id='searchbutton' value='Search'> 
@@ -28,7 +28,7 @@
 <button id='resultback'>Back</button>
 	<div class='outer'>
 		<div class='resultsform'>
-			<img id='smalllogo' src='img/elasticlogo_small.png' hspace='20' >
+			<img id='smalllogo' src='../img/elasticlogo_small.png' hspace='20' >
 			<form onsubmit='event.preventDefault();searchResultWindow();'>
 				<input id='resultsinput' type='text' name='searchbox' size='50' value=''>
 			</form>
