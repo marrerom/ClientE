@@ -7,7 +7,6 @@
 const ELASTIC_URI = "http://localhost:9200";
 const ELASTIC_DOCTYPE = "cran";
 const NRESULTS = 10;
-const USERCOOKIE = "user";
 const EXPDAYS = 60;
 
 var idexperiment;
@@ -16,7 +15,7 @@ var host;
 var index;
 
 function initTreatment(idexp, indextype) {
-	user = checkCookie();
+	user = checkCookie(idexp);
 	index = indextype;
 	idexperiment = idexp;
 
@@ -85,15 +84,15 @@ function getXMLHttpRequest() {
 
 // COOKIES
 
-function checkCookie() {
-	var user = getCookieValue(USERCOOKIE);
+function checkCookie(cookiename) {
+	var user = getCookieValue(cookiename);
 	if (!user) {
 		var urlsearch = window.location.search;
 		if (urlsearch){
 			var items = urlsearch.split("=");
 			if (items.length == 2 && items[1])
 				user = items[1];
-			setCookie(USERCOOKIE,user,EXPDAYS);
+			setCookie(cookiename,user,EXPDAYS);
 		}
 		//var randnumber = Math.floor((Math.random() * 10000) + 1); //TODO: better method to avoid collisions
 	}
