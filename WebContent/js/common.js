@@ -56,17 +56,14 @@ function getHost() {
 	return result + path;
 }
 
-//Not used: just in case we need to read/set cookies in cross-domain calls (experiment/getparams and event/register endpoints don't use cookies)
-function createCORSRequest(method, url){
+//Not used: just in case we need to read/set cookies in cross-domain calls
+function getXMLHttpRequestCORS(){
   var xmlhttp = new XMLHttpRequest();
   if ("withCredentials" in xmlhttp){
+	  xmlhttp.withCredentials = true;
     // xmlhttp has 'withCredentials' property only if it supports CORS
-	  xmlhttp.open(method, url, true);
   } else if (typeof XDomainRequest != "undefined"){ // if IE use XDR
 	  xmlhttp = new XDomainRequest();
-	  xmlhttp.open(method, url);
-  } else {
-	  xmlhttp = null;
   }
   return xmlhttp;
 }
@@ -94,7 +91,6 @@ function checkCookie(cookiename) {
 				user = items[1];
 			setCookie(cookiename,user,EXPDAYS);
 		}
-		//var randnumber = Math.floor((Math.random() * 10000) + 1); //TODO: better method to avoid collisions
 	}
 	return user;
 }
@@ -165,7 +161,7 @@ function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
 	
 		xhttp.open("POST",
 			"http://localhost:8080/IREPlatform/service/event/register", true);
-		xmlhttp.setRequestHeader("Content-Type", "application/json");
+		xhttp.setRequestHeader("Content-Type", "application/json");
 		var inputTxt = JSON.stringify(inputJson);
 		xhttp.send(inputTxt);
 	}
