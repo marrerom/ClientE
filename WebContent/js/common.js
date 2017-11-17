@@ -4,7 +4,8 @@
  * http.cors.allow-origin: /https?:\/\/localhost(:[0-9]+)?/
  */
 
-const ELASTIC_URI = "http://localhost:9200";
+const ELASTIC_DOMAIN = "http://localhost:9200";
+const IREPLATFORM_DOMAIN = "http://localhost:8080";
 const ELASTIC_DOCTYPE = "cran";
 const NRESULTS = 10;
 const EXPDAYS = 60;
@@ -159,8 +160,7 @@ function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
 		inputJson.evalue = evalue;
 		inputJson.paramvalues = paramvalues;
 	
-		xhttp.open("POST",
-			"http://localhost:8080/IREPlatform/service/event/register", true);
+		xhttp.open("POST", IREPLATFORM_DOMAIN + "/IREPlatform/service/event/register", true);
 		xhttp.setRequestHeader("Content-Type", "application/json");
 		var inputTxt = JSON.stringify(inputJson);
 		xhttp.send(inputTxt);
@@ -282,7 +282,7 @@ function search(query, from) {
 		}
 	};
 	//only with POST instead of GET, all the options work as expected (eg. highlight)
-	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
+	xhttp.open("POST", ELASTIC_DOMAIN + "/" + index + "/" + ELASTIC_DOCTYPE
 			+ "/_search", true);
 	xmlhttp.setRequestHeader("Content-Type", "application/json");
 	var param = getQueryBody(query, from); 
@@ -312,7 +312,7 @@ function showDocument(id, query, ranking) {
 			showDocumentSuccess(this.responseText, id, query, ranking);
 		}
 	};
-	xhttp.open("GET", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE + "/"
+	xhttp.open("GET", ELASTIC_DOMAIN + "/" + index + "/" + ELASTIC_DOCTYPE + "/"
 			+ id, true);
 	xhttp.send();
 }
