@@ -5,7 +5,7 @@
  */
 
 const IDEXPERIMENT = "5a1549322ada011db14638d6";
-const ELASTIC_URI = "http://localhost:9200";
+const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";
 const ELASTIC_DOCTYPE = "cran";
 const IREPLATFORM_URI = "http://localhost:8080";
 
