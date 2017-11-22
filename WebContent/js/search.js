@@ -1,26 +1,24 @@
 /**
- * IMPORTANT. Add this to elasticsearch.yml in config: 
+ * IMPORTANT: if you run this web project and elasticSearch in local, add this to elasticsearch.yml in config: 
  * http.cors.enabled: true
  * http.cors.allow-origin: /https?:\/\/localhost(:[0-9]+)?/
  */
 
-const ELASTIC_DOMAIN = "http://localhost:9200";
-const IREPLATFORM_DOMAIN = "http://localhost:8080";
+const IDEXPERIMENT = "5a1549322ada011db14638d6";
+const ELASTIC_URI = "http://localhost:9200";
 const ELASTIC_DOCTYPE = "cran";
+const IREPLATFORM_URI = "http://localhost:8080";
+
 const NRESULTS = 10;
 const EXPDAYS = 60;
 
-var idexperiment;
+//parameters
 var user;
-var host;
 var index;
+var color;
 
-function initTreatment(idexp, indextype) {
-	user = checkCookie(idexp);
-	index = indextype;
-	idexperiment = idexp;
-
-	host = getHost();
+function init() {
+	setParameters(IDEXPERIMENT);
 
 	document.getElementById("docblock").style.display = "none";
 	document.getElementById("searchblock").style.display = "block";
@@ -47,15 +45,22 @@ function initTreatment(idexp, indextype) {
 
 //GENERIC
 
-function getHost() {
-	var result = window.location.protocol + "//" + window.location.hostname;
-	var port = window.location.port;
-	if (port != null && port != "") {
-		result = result + ":" + port;
-	}
-	var path = window.location.pathname;
-	return result + path;
+function setParameters(idexp){
+	user  = checkCookie(idexp+"_idunit", "_idunit");
+	index = checkCookie(idexp+"rankingAlg","rankingAlg");
+	color = checkCookie(idexp+"linkColor","linkColor")
 }
+
+
+//function getHost() {
+//	var result = window.location.protocol + "//" + window.location.hostname;
+//	var port = window.location.port;
+//	if (port != null && port != "") {
+//		result = result + ":" + port;
+//	}
+//	var path = window.location.pathname;
+//	return result + path;
+//}
 
 //Not used: just in case we need to read/set cookies in cross-domain calls
 function getXMLHttpRequestCORS(){
@@ -80,20 +85,29 @@ function getXMLHttpRequest() {
 	return xmlhttp;
 }
 
-// COOKIES
 
-function checkCookie(cookiename) {
-	var user = getCookieValue(cookiename);
-	if (!user) {
+function getParameterFromURL(name) {
+    url = window.location.search;
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2]);
+}
+
+//COOKIES
+
+function checkCookie(cookiename, param) {
+	var value = getCookieValue(cookiename);
+	if (!value) {
 		var urlsearch = window.location.search;
 		if (urlsearch){
-			var items = urlsearch.split("=");
-			if (items.length == 2 && items[1])
-				user = items[1];
-			setCookie(cookiename,user,EXPDAYS);
+			value = getParameterFromURL(param);
+			if (value)
+				setCookie(cookiename,value,EXPDAYS);
 		}
 	}
-	return user;
+	return value;
 }
 
 function setCookie(cname, cvalue, exdays) {
@@ -129,7 +143,7 @@ function registerSearch(user, results, query) {
 	var queryResults = JSON.parse(results);
 	evalue.took = queryResults.took;
 	evalue.hits = queryResults.hits.total;
-	registerEvent(idexperiment, user, "JSON", "search", evalue, {});
+	registerEvent(IDEXPERIMENT, user, "JSON", "search", evalue, {});
 }
 
 function registerPageView(user, results, query, from) {
@@ -138,7 +152,7 @@ function registerPageView(user, results, query, from) {
 	evalue.hits = queryResults.hits.total;
 	evalue.query = query;
 	evalue.page = from / NRESULTS;
-	registerEvent(idexperiment, user, "JSON", "page", evalue, {});
+	registerEvent(IDEXPERIMENT, user, "JSON", "page", evalue, {});
 }
 
 function registerDocView(user, id, query, ranking) {
@@ -146,7 +160,7 @@ function registerDocView(user, id, query, ranking) {
 	evalue.iddoc = id;
 	evalue.query = query;
 	evalue.ranking = ranking;
-	registerEvent(idexperiment, user, "JSON", "click", evalue, {});
+	registerEvent(IDEXPERIMENT, user, "JSON", "click", evalue, {});
 }
 
 function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
@@ -160,7 +174,7 @@ function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
 		inputJson.evalue = evalue;
 		inputJson.paramvalues = paramvalues;
 	
-		xhttp.open("POST", IREPLATFORM_DOMAIN + "/IREPlatform/service/event/register", true);
+		xhttp.open("POST", IREPLATFORM_URI + "/IREPlatform/service/event/register", true);
 		xhttp.setRequestHeader("Content-Type", "application/json");
 		var inputTxt = JSON.stringify(inputJson);
 		xhttp.send(inputTxt);
@@ -255,8 +269,8 @@ function addResult(item, query, ranking) {
 	var titleElement = document.createElement("A");
 	titleElement.setAttribute("href", "javascript:showDocument(" + id + ",'"
 			+ query + "'," + ranking + ");");
-	titleElement.setAttribute("class", "result_title");
-
+	//titleElement.setAttribute("class", "result_title");
+	titleElement.setAttribute("style","color:"+color+";");
 	titleElement.appendChild(document.createTextNode(title));
 
 	var snippetElement = document.createElement("P");
@@ -282,7 +296,7 @@ function search(query, from) {
 		}
 	};
 	//only with POST instead of GET, all the options work as expected (eg. highlight)
-	xhttp.open("POST", ELASTIC_DOMAIN + "/" + index + "/" + ELASTIC_DOCTYPE
+	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
 			+ "/_search", true);
 	xmlhttp.setRequestHeader("Content-Type", "application/json");
 	var param = getQueryBody(query, from); 
@@ -312,7 +326,7 @@ function showDocument(id, query, ranking) {
 			showDocumentSuccess(this.responseText, id, query, ranking);
 		}
 	};
-	xhttp.open("GET", ELASTIC_DOMAIN + "/" + index + "/" + ELASTIC_DOCTYPE + "/"
+	xhttp.open("GET", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE + "/"
 			+ id, true);
 	xhttp.send();
 }
