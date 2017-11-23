@@ -5,7 +5,7 @@
  */
 
 const IDEXPERIMENT = "5a1549322ada011db14638d6";
-const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";
+const ELASTIC_URI = "https://ireplatform.ewi.tudelft.nl:9200";
 const ELASTIC_DOCTYPE = "cran";
 const IREPLATFORM_URI = "http://localhost:8080";
 
@@ -287,6 +287,13 @@ function getQueryBody(query, from) {
 	return "{\"highlight\":{\"fields\":{\"bibliography\":{},\"author\":{},\"body\":{},\"title\":{}}},\"size\":10,\"query\":{\"multi_match\":{\"query\":\""+query+"\",\"fields\":[\"body\",\"title\",\"bibliography\",\"author\"]}},\"_source\":[\"title\"],\"from\":"+from+"}";
 }
 
+
+function make_base_auth(user, pass) {
+	  var tok = user + ':' + pass;
+	  var hash = btoa(tok);
+	  return "Basic " + hash;
+	}
+
 // Launch query in Elastic Search
 function search(query, from) {
 	var xhttp = getXMLHttpRequest();
@@ -299,6 +306,10 @@ function search(query, from) {
 	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
 			+ "/_search", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
+	
+	var auth = make_base_auth('elastic','changeme');
+	xhttp.setRequestHeader('Authorization', auth);
+	
 	var param = getQueryBody(query, from); 
 	xhttp.send(param);
 }
