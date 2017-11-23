@@ -165,7 +165,7 @@ function registerDocView(user, id, query, ranking) {
 
 function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
 	if (user){
-		var xhttp = getXMLHttpRequest();
+		var xhttp = getXMLHttpRequestCORS();
 		var inputJson = new Object();
 		inputJson.idunit = idunit;
 		inputJson.idconfig = idconf;
@@ -289,7 +289,7 @@ function getQueryBody(query, from) {
 
 // Launch query in Elastic Search
 function search(query, from) {
-	var xhttp = getXMLHttpRequest();
+	var xhttp = getXMLHttpRequestCORS();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			searchSuccess(this.responseText, query, from);
@@ -298,7 +298,7 @@ function search(query, from) {
 	//only with POST instead of GET, all the options work as expected (eg. highlight)
 	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
 			+ "/_search", true);
-	xmlhttp.setRequestHeader("Content-Type", "application/json");
+	xhttp.setRequestHeader("Content-Type", "application/json");
 	var param = getQueryBody(query, from); 
 	xhttp.send(param);
 }
@@ -320,7 +320,7 @@ function showDocumentSuccess(esdoc, id, query, ranking) {
 }
 
 function showDocument(id, query, ranking) {
-	var xhttp = getXMLHttpRequest();
+	var xhttp = getXMLHttpRequestCORS();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			showDocumentSuccess(this.responseText, id, query, ranking);
