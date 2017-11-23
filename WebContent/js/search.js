@@ -289,7 +289,7 @@ function getQueryBody(query, from) {
 
 // Launch query in Elastic Search
 function search(query, from) {
-	var xhttp = getXMLHttpRequestCORS();
+	var xhttp = getXMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			searchSuccess(this.responseText, query, from);
@@ -320,7 +320,7 @@ function showDocumentSuccess(esdoc, id, query, ranking) {
 }
 
 function showDocument(id, query, ranking) {
-	var xhttp = getXMLHttpRequestCORS();
+	var xhttp = getXMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			showDocumentSuccess(this.responseText, id, query, ranking);
