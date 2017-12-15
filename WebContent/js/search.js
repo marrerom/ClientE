@@ -1,24 +1,32 @@
 /**
- * IMPORTANT: if you run this web project and elasticSearch in local, add this to elasticsearch.yml in config: 
- * http.cors.enabled: true
- * http.cors.allow-origin: /https?:\/\/localhost(:[0-9]+)?/
+ * Javascript methods shared by the clients of two different experiments: ColorExp (color.html), which varies the color of the search
+ * results, and RankingExp (ranking.html), which changes the ranking algorithm used in the queries.
+ * The search engine used is ElasticSearch, located at ELASTIC_URI
+ * The experimental platform, where the experiments are defined is located at IREPLATFORM_URI. The events (interaction with the user) are registered there.
+ * 
+ * @author mmarrero
+ * 
  */
 
-const IDEXPERIMENT = "5a1549322ada011db14638d6";
-const ELASTIC_URI = "https://ireplatform.ewi.tudelft.nl:9200";
-const ELASTIC_DOCTYPE = "cran";
-const IREPLATFORM_URI = "http://localhost:8080";
+const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";     //location of the ElasticSearch service to be used
+const ELASTIC_DOCTYPE = "cran"; 								  //collection indexed in ElasticSearch
+const IREPLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080"; //location of IREPlatform
 
-const NRESULTS = 10;
-const EXPDAYS = 60;
+const NRESULTS = 10; //number of documents displayed per page
+const EXPDAYS = 60;  //cookies expiration time
 
-//parameters
+//identifier of the experiment defined in IREPlatform. 
+//Remember to update this information in the HTML files (function 'init', in body onload event)
+var idexperiment; 
+
+//experimental parameters received as query parameteres in the URL
 var user;
 var index;
 var color;
 
-function init() {
-	setParameters(IDEXPERIMENT);
+function init(idexp) {
+	idexperiment = idexp; //set the experiment identifier. It will be used to register events and in general to interact with IREPlatform
+	setParameters(idexp); //read the parameters from the URL and set them in cookies (if they are already set, take the values from the cookies)
 
 	document.getElementById("docblock").style.display = "none";
 	document.getElementById("searchblock").style.display = "block";
@@ -36,66 +44,32 @@ function init() {
 		document.getElementById("resultblock").style.display = "none";
 	});
 
-	if (user)
+	if (user){
 		document.getElementById("user").innerHTML = user;
+		checkIfCompleted();
+	}
 	else
 		document.getElementById("user").innerHTML = "not set";
-		
 }
 
-//GENERIC
 
+/*
+ * COOKIES 
+ * 
+ * Save in cookies the parameters received in the URL. In this case, the identifier of the user, the ranking algorithm to use, and the link color to use.
+ * Next time the user access the same URL, this information will be set from the cookies. That way, same user and same experiment, will always be exposed
+ * to the same variant.
+ * 
+ * Note: If the user access a second time the IREPlatform redirection endpoint instead, he may be exposed to a different experiment. In that case, he will
+ * be assigned a new user identifier. Therefore, the information in the cookies and the information in the query parameters in the URL will be different. 
+ * It is up to the experimenter to decide how to manage this. A good practice would be that the user never access directly the redirection endpoint from
+ * his browser. 
+ */
 function setParameters(idexp){
-	user  = checkCookie(idexp+"_idunit", "_idunit");
+	user  = checkCookie(idexp, "_idunit");
 	index = checkCookie(idexp+"rankingAlg","rankingAlg");
 	color = checkCookie(idexp+"linkColor","linkColor")
 }
-
-
-//function getHost() {
-//	var result = window.location.protocol + "//" + window.location.hostname;
-//	var port = window.location.port;
-//	if (port != null && port != "") {
-//		result = result + ":" + port;
-//	}
-//	var path = window.location.pathname;
-//	return result + path;
-//}
-
-//Not used: just in case we need to read/set cookies in cross-domain calls
-function getXMLHttpRequestCORS(){
-  var xmlhttp = new XMLHttpRequest();
-  if ("withCredentials" in xmlhttp){
-	  xmlhttp.withCredentials = true;
-    // xmlhttp has 'withCredentials' property only if it supports CORS
-  } else if (typeof XDomainRequest != "undefined"){ // if IE use XDR
-	  xmlhttp = new XDomainRequest();
-  }
-  return xmlhttp;
-}
-
-function getXMLHttpRequest() {
-	if (window.XMLHttpRequest) {
-		// code for modern browsers
-		xmlhttp = new XMLHttpRequest();
-	} else {
-		// code for old IE browsers
-		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-	}
-	return xmlhttp;
-}
-
-
-function getParameterFromURL(name) {
-    url = window.location.search;
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2]);
-}
-
-//COOKIES
 
 function checkCookie(cookiename, param) {
 	var value = getCookieValue(cookiename);
@@ -108,6 +82,19 @@ function checkCookie(cookiename, param) {
 		}
 	}
 	return value;
+}
+
+function getParameterFromURL(name) {
+	var query = window.location.search;
+	if (!query) return null;
+	query = decodeURIComponent(query);
+	var encoded = query.replace("?","");
+    var decoded = "?"+atob(encoded);
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(decoded);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2]);
 }
 
 function setCookie(cname, cvalue, exdays) {
@@ -133,9 +120,40 @@ function getCookieValue(cname) {
 	return null;
 }
 
+/*
+ * GENERIC METHODS
+ */
 
+function getXMLHttpRequest() {
+	if (window.XMLHttpRequest) {
+		// code for modern browsers
+		xmlhttp = new XMLHttpRequest();
+	} else {
+		// code for old IE browsers
+		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	return xmlhttp;
+}
 
-// REGISTER EVENT
+//Contents of Authorization header. It is needed to make calls to the ElasticSearch service located in ireplatform.ewi.tudelft.nl
+function make_base_auth(user, pass) {
+	  var tok = user + ':' + pass;
+	  var hash = btoa(tok);
+	  return "Basic " + hash;
+}
+
+/*
+ * REGISTER EVENTS
+ * 
+ * Functions to register the interaction with the user (search, page view and document view).
+ * An additional function (registerCompleted) register if the user has completed the experiment. This event is predefined in the platform.
+ * 
+ * In the platform, it is used to avoid same users receiving the same experiments when they click in 'Paricipate in random experiment' 
+ * from Monitoring::Users
+ * 
+ * In the client, the experimenter could avoid new interactions to be saved for example. The function 'checkIfCompleted' checks if the user has already
+ * completed the experiment (that is, if there already exists an event 'completed' for that user and experiment).  
+ */ 
 
 function registerSearch(user, results, query) {
 	var evalue = new Object();
@@ -143,7 +161,7 @@ function registerSearch(user, results, query) {
 	var queryResults = JSON.parse(results);
 	evalue.took = queryResults.took;
 	evalue.hits = queryResults.hits.total;
-	registerEvent(IDEXPERIMENT, user, "JSON", "search", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "search", evalue, {});
 }
 
 function registerPageView(user, results, query, from) {
@@ -152,7 +170,7 @@ function registerPageView(user, results, query, from) {
 	evalue.hits = queryResults.hits.total;
 	evalue.query = query;
 	evalue.page = from / NRESULTS;
-	registerEvent(IDEXPERIMENT, user, "JSON", "page", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "page", evalue, {});
 }
 
 function registerDocView(user, id, query, ranking) {
@@ -160,28 +178,59 @@ function registerDocView(user, id, query, ranking) {
 	evalue.iddoc = id;
 	evalue.query = query;
 	evalue.ranking = ranking;
-	registerEvent(IDEXPERIMENT, user, "JSON", "click", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "click", evalue, {});
 }
 
-function registerEvent(idconf, idunit, etype, ename, evalue, paramvalues) {
+function registerCompleted(user) {
+	registerEvent(idexperiment, user, "STRING", "completed", "", {});
+}
+
+/*
+ * @param idexperiment identifier of the experiment
+ * @param idunit identifier of the user
+ * @param etype type of contents to be saved ("JSON", "STRING" or "BINARY")
+ * @param ename name of the event (reserved names are 'exposure' and 'completed')
+ * @param evalue contents to be saved in the format specified in etype
+ * @param paramvalues if we use PlanOut to define the experiment, we will receive in the URL the parameters we defined in PlanOut with the corresponding 
+ * values depending on the variant received. If we did't use PlanOut to define the experiment, this value will be an empty JSON object 
+ */
+function registerEvent(idexperiment, idunit, etype, ename, evalue, paramvalues) {
 	if (user){
-		var xhttp = getXMLHttpRequestCORS();
+		var xhttp = getXMLHttpRequest();
 		var inputJson = new Object();
 		inputJson.idunit = idunit;
-		inputJson.idconfig = idconf;
+		inputJson.idconfig = idexperiment;
 		inputJson.etype = etype;
 		inputJson.ename = ename;
 		inputJson.evalue = evalue;
 		inputJson.paramvalues = paramvalues;
-	
-		xhttp.open("POST", IREPLATFORM_URI + "/IREPlatform/service/event/register", true);
+		xhttp.open("POST", "Register", true);
 		xhttp.setRequestHeader("Content-Type", "application/json");
 		var inputTxt = JSON.stringify(inputJson);
-		xhttp.send(inputTxt);
+		xhttp.send(encodeURIComponent(inputTxt));
 	}
 }
 
-// SEARCH
+function checkIfCompleted(){
+	var xhttp = getXMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			if (this.response == "true")
+				window.alert("Experiment already completed"); //or better, if this is true, don't send any event
+		}
+	};
+	if (user){
+		xhttp.open("GET", "CheckCompleted?idexperiment="+idexperiment+"&user="+user, true);
+		xhttp.send();
+	}
+}
+
+/*
+ * SEARCH
+ * 
+ * Launch the queries in ElasticSearch and display the results
+ * More information about ElasticSearch: www.elastic.co/guide/en/elasticsearch/guide
+ */ 
 
 function searchMainWindow() {
 	var query = document.getElementById("searchinput").value;
@@ -193,6 +242,30 @@ function searchResultWindow() {
 	search(query, 0);
 }
 
+function search(query, from) {
+	var xhttp = getXMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			searchSuccess(this.responseText, query, from);
+		}
+	};
+	//only with POST instead of GET, all the options work as expected (eg. highlighting does not work with GET)
+	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
+			+ "/_search", true);
+	xhttp.setRequestHeader("Content-Type", "application/json");
+	
+	var auth = make_base_auth('irepuser','irepuser17');
+	xhttp.setRequestHeader('Authorization', auth);
+	
+	var param = getQueryBody(query, from); 
+	xhttp.send(param);
+}
+
+
+function getQueryBody(query, from) {
+	return "{\"highlight\":{\"fields\":{\"bibliography\":{},\"author\":{},\"body\":{},\"title\":{}}},\"size\":10,\"query\":{\"multi_match\":{\"query\":\""+query+"\",\"fields\":[\"body\",\"title\",\"bibliography\",\"author\"]}},\"_source\":[\"title\"],\"from\":"+from+"}";
+}
+
 function searchSuccess(results, query, from) {
 	document.getElementById("docblock").style.display = "none";
 	document.getElementById("searchblock").style.display = "none";
@@ -201,23 +274,12 @@ function searchSuccess(results, query, from) {
 	var resultsObj = JSON.parse(results);
 	loadResults(resultsObj, query, from);
 	createNextPages(query, resultsObj.hits.total);
-	if (from == 0)
+	if (from == 0){
 		registerSearch(user, results, query);
+		//registerCompleted(user); //uncomment this if the experiment is considered finished if the user make one query at least
+	}
 	registerPageView(user, results, query, from);
 	
-}
-
-function createNextPages(query, hits) {
-	document.getElementById("pages").innerHTML = "";
-	for (var i = 0; i < hits; i += 10) {
-		var link = document.createElement("A");
-		link.setAttribute("href", "javascript:search('" + query + "'," + i
-				+ ");");
-		link.innerHTML = "&nbsp;&nbsp;";
-		link.appendChild(document.createTextNode(i / 10));
-		link.innerHTML += "&nbsp;&nbsp;";
-		document.getElementById("pages").appendChild(link);
-	}
 }
 
 function loadResults(results, query, from) {
@@ -227,21 +289,26 @@ function loadResults(results, query, from) {
 	document.getElementById("resultsinput").value = query;
 	document.getElementById("resultslist").innerHTML = "";
 	for (var i = 0; i < results.hits.hits.length; i++) {
-		addResult(results.hits.hits[i], query, from + i + 1); // ranking
-																// starting in 1
+		addResult(results.hits.hits[i], query, from + i + 1); // ranking starting in 1
 	}
 }
 
-function getSnippetField(field, fieldarray) {
-	var snippet = "";
-	if (fieldarray) {
-		snippet = snippet + "<p><strong>" + field + ": </strong>"
-		for (var i = 0; i < fieldarray.length; i++) {
-			snippet = snippet + "<span>" + fieldarray[i] + "</span>";
-		}
-		snippet = snippet + "</p>";
-	}
-	return snippet;
+function addResult(item, query, ranking) {
+	var title = item._source.title;
+	var id = item._id;
+	var snippet = getSnippet(item);
+	var li = document.createElement("li");
+	li.setAttribute("id", id);
+	var titleElement = document.createElement("A");
+	titleElement.setAttribute("href", "javascript:showDocument(" + id + ",'"
+			+ query + "'," + ranking + ");");
+	titleElement.setAttribute("style","color:"+color+";");
+	titleElement.appendChild(document.createTextNode(title));
+	var snippetElement = document.createElement("P");
+	snippetElement.innerHTML = snippet;
+	li.appendChild(titleElement);
+	li.appendChild(snippetElement);
+	document.getElementById("resultslist").appendChild(li);
 }
 
 function getSnippet(item) {
@@ -258,63 +325,38 @@ function getSnippet(item) {
 	return snippet;
 }
 
-function addResult(item, query, ranking) {
-	var title = item._source.title;
-	var id = item._id;
-	var snippet = getSnippet(item);
-
-	var li = document.createElement("li");
-	li.setAttribute("id", id);
-
-	var titleElement = document.createElement("A");
-	titleElement.setAttribute("href", "javascript:showDocument(" + id + ",'"
-			+ query + "'," + ranking + ");");
-	//titleElement.setAttribute("class", "result_title");
-	titleElement.setAttribute("style","color:"+color+";");
-	titleElement.appendChild(document.createTextNode(title));
-
-	var snippetElement = document.createElement("P");
-	snippetElement.innerHTML = snippet;
-
-	li.appendChild(titleElement);
-	li.appendChild(snippetElement);
-	document.getElementById("resultslist").appendChild(li);
-}
-// Create request body: query and highlight, the latter is useful to get
-// snippets
-// (https://www.elastic.co/guide/en/elasticsearch/guide/current/highlighting-intro.html)
-function getQueryBody(query, from) {
-	return "{\"highlight\":{\"fields\":{\"bibliography\":{},\"author\":{},\"body\":{},\"title\":{}}},\"size\":10,\"query\":{\"multi_match\":{\"query\":\""+query+"\",\"fields\":[\"body\",\"title\",\"bibliography\",\"author\"]}},\"_source\":[\"title\"],\"from\":"+from+"}";
-}
-
-
-function make_base_auth(user, pass) {
-	  var tok = user + ':' + pass;
-	  var hash = btoa(tok);
-	  return "Basic " + hash;
-	}
-
-// Launch query in Elastic Search
-function search(query, from) {
-	var xhttp = getXMLHttpRequest();
-	xhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-			searchSuccess(this.responseText, query, from);
+function getSnippetField(field, fieldarray) {
+	var snippet = "";
+	if (fieldarray) {
+		snippet = snippet + "<p><strong>" + field + ": </strong>"
+		for (var i = 0; i < fieldarray.length; i++) {
+			snippet = snippet + "<span>" + fieldarray[i] + "</span>";
 		}
-	};
-	//only with POST instead of GET, all the options work as expected (eg. highlight)
-	xhttp.open("POST", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE
-			+ "/_search", true);
-	xhttp.setRequestHeader("Content-Type", "application/json");
-	
-	var auth = make_base_auth('elastic','changeme');
-	xhttp.setRequestHeader('Authorization', auth);
-	
-	var param = getQueryBody(query, from); 
-	xhttp.send(param);
+		snippet = snippet + "</p>";
+	}
+	return snippet;
 }
 
-// SHOW DOCUMENT
+function createNextPages(query, hits) {
+	document.getElementById("pages").innerHTML = "";
+	for (var i = 0; i < hits; i += 10) {
+		var link = document.createElement("A");
+		link.setAttribute("href", "javascript:search('" + query + "'," + i
+				+ ");");
+		link.innerHTML = "&nbsp;&nbsp;";
+		link.appendChild(document.createTextNode(i / 10));
+		link.innerHTML += "&nbsp;&nbsp;";
+		document.getElementById("pages").appendChild(link);
+	}
+}
+
+
+/*
+ * SHOW DOCUMENT
+ * 
+ * Get the information from a specific document from ElasticSearch, and display the information.
+ * More information about ElasticSearch: www.elastic.co/guide/en/elasticsearch/guide
+ */ 
 
 function showDocumentSuccess(esdoc, id, query, ranking) {
 	document.getElementById("searchblock").style.display = "none";
@@ -339,5 +381,8 @@ function showDocument(id, query, ranking) {
 	};
 	xhttp.open("GET", ELASTIC_URI + "/" + index + "/" + ELASTIC_DOCTYPE + "/"
 			+ id, true);
+	var auth = make_base_auth('irepuser','irepuser17');
+	xhttp.setRequestHeader('Authorization', auth);
+
 	xhttp.send();
 }
