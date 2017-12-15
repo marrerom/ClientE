@@ -1,0 +1,62 @@
+@charset "UTF-8";
+
+
+h1 {
+	color:#0080ff;
+}
+
+h2 {
+	color:gray;
+}
+
+input {
+	font-size:150%;
+}
+
+
+.outer {
+	padding:5px;
+}
+
+.search {
+    padding: 8% 0;
+    text-align: center;
+}
+
+.setup {
+	float:right;
+}
+
+.resultsform {
+	padding: 2%;
+	border-style: solid;
+    border-color: grey;
+    border-width: 1px;
+}
+
+.resultscontents{
+	overflow-y: auto;
+}
+
+.user {
+	padding: 10px;
+}
+
+.footer {
+   	bottom:0;
+   	text-align: center;
+}
+
+
+#searchbutton {
+	font-size:150%;
+	color: grey;
+}
+
+
+#smalllogo {
+	float:left;
+	width:50px;
+	height:50px;
+}
+
