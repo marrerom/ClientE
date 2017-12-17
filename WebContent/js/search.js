@@ -10,7 +10,6 @@
 
 const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";     //location of the ElasticSearch service to be used
 const ELASTIC_DOCTYPE = "cran"; 								  //collection indexed in ElasticSearch
-const IREPLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080"; //location of IREPlatform
 
 const NRESULTS = 10; //number of documents displayed per page
 const EXPDAYS = 60;  //cookies expiration time
@@ -57,29 +56,27 @@ function init(idexp) {
  * COOKIES 
  * 
  * Save in cookies the parameters received in the URL. In this case, the identifier of the user, the ranking algorithm to use, and the link color to use.
- * Next time the user access the same URL, this information will be set from the cookies. That way, same user and same experiment, will always be exposed
- * to the same variant.
+ * Next time the user access the same URL, this information will be set from the parameters, or from the cookies if there are no parameters in the URL. 
  * 
- * Note: If the user access a second time the IREPlatform redirection endpoint instead, he may be exposed to a different experiment. In that case, he will
- * be assigned a new user identifier. Therefore, the information in the cookies and the information in the query parameters in the URL will be different. 
- * It is up to the experimenter to decide how to manage this. A good practice would be that the user never access directly the redirection endpoint from
- * his browser. 
+ * Note: The information in the cookies and the information in the query parameters in the URL could be different for different reasons. 
+ * It is up to the experimenter to decide how to manage this. 
  */
 function setParameters(idexp){
-	user  = checkCookie(idexp, "_idunit");
-	index = checkCookie(idexp+"rankingAlg","rankingAlg");
-	color = checkCookie(idexp+"linkColor","linkColor")
+	user  = checkParam(idexp, "_idunit");
+	index = checkParam(idexp+"rankingAlg","rankingAlg");
+	color = checkParam(idexp+"linkColor","linkColor")
 }
 
-function checkCookie(cookiename, param) {
-	var value = getCookieValue(cookiename);
+function checkParam(cookiename, param) {
+	var urlsearch = window.location.search;
+	var value = null;
+	if (urlsearch){
+		value = getParameterFromURL(param);
+		if (value)
+			setCookie(cookiename,value,EXPDAYS);
+	}
 	if (!value) {
-		var urlsearch = window.location.search;
-		if (urlsearch){
-			value = getParameterFromURL(param);
-			if (value)
-				setCookie(cookiename,value,EXPDAYS);
-		}
+		value = getCookieValue(cookiename);
 	}
 	return value;
 }
