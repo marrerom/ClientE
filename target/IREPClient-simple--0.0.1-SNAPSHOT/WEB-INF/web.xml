@@ -2,7 +2,7 @@
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
   <display-name>IREPClient-simple-</display-name>
   <welcome-file-list>
-   <welcome-file>color.html</welcome-file>
+    <welcome-file>color.html</welcome-file>
     <welcome-file>index.html</welcome-file>
     <welcome-file>index.htm</welcome-file>
     <welcome-file>index.jsp</welcome-file>
@@ -10,20 +10,4 @@
     <welcome-file>default.htm</welcome-file>
     <welcome-file>default.jsp</welcome-file>
   </welcome-file-list>
-<!--   <servlet> -->
-<!--     <servlet-name>Register</servlet-name> -->
-<!--     <servlet-class>tudelft.dds.irep.client.service.Register</servlet-class> -->
-<!-- </servlet> -->
-<!-- <servlet-mapping> -->
-<!--     <servlet-name>Register</servlet-name> -->
-<!--     <url-pattern>/Register</url-pattern> -->
-<!-- </servlet-mapping> -->
-<!--   <servlet> -->
-<!--     <servlet-name>CheckCompleted</servlet-name> -->
-<!--     <servlet-class>tudelft.dds.irep.client.service.CheckCompleted</servlet-class> -->
-<!-- </servlet> -->
-<!-- <servlet-mapping> -->
-<!--     <servlet-name>CheckCompleted</servlet-name> -->
-<!--     <url-pattern>/CheckCompleted</url-pattern> -->
-<!-- </servlet-mapping> -->
 </web-app>

@@ -1,20 +1,22 @@
 /**
- * Javascript methods shared by the clients of two different experiments: ColorExp (color.html), which varies the color of the search
- * results, and RankingExp (ranking.html), which changes the ranking algorithm used in the queries.
+ * Javascript methods shared by the clients of two different experiments: ColorExp (color.html), which varies 
+ * the color of the search results, and RankingExp (ranking.html), which changes the ranking algorithm used in the queries.
  * The search engine used is ElasticSearch, located at ELASTIC_URI
- * The experimental platform, where the experiments are defined is located at IREPLATFORM_URI. The events (interaction with the user) are registered there.
+ * The experimental platform, where the experiments are defined is located at PLATFORM_URI. 
+ * The events (interaction with the user) are registered there.
  * 
  * @author mmarrero
  * 
  */
 
+const PLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080/IREPlatform";
 const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";     //location of the ElasticSearch service to be used
 const ELASTIC_DOCTYPE = "cran"; 								  //collection indexed in ElasticSearch
 
 const NRESULTS = 10; //number of documents displayed per page
 const EXPDAYS = 60;  //cookies expiration time
 
-//identifier of the experiment defined in IREPlatform. 
+//identifier of the experiment defined in the platform. 
 //Remember to update this information in the HTML files (function 'init', in body onload event)
 var idexperiment; 
 
@@ -24,9 +26,10 @@ var index;
 var color;
 
 function init(idexp) {
-	idexperiment = idexp; //set the experiment identifier. It will be used to register events and in general to interact with IREPlatform
+	idexperiment = idexp; //set the experiment identifier. It will be used to register events and in general to interact with the platform
 	setParameters(idexp); //read the parameters from the URL and set them in cookies (if they are already set, take the values from the cookies)
-
+	registerExposure(user);
+	
 	document.getElementById("docblock").style.display = "none";
 	document.getElementById("searchblock").style.display = "block";
 	document.getElementById("resultblock").style.display = "none";
@@ -55,8 +58,9 @@ function init(idexp) {
 /*
  * COOKIES 
  * 
- * Save in cookies the parameters received in the URL. In this case, the identifier of the user, the ranking algorithm to use, and the link color to use.
- * Next time the user access the same URL, this information will be set from the parameters, or from the cookies if there are no parameters in the URL. 
+ * Save in cookies the parameters received in the URL. In this case, the identifier of the user, the ranking algorithm to use, 
+ * and the link color to use. Next time the user access the same URL, this information will be set from the parameters, 
+ * or from the cookies if there are no parameters in the URL. 
  * 
  * Note: The information in the cookies and the information in the query parameters in the URL could be different for different reasons. 
  * It is up to the experimenter to decide how to manage this. 
@@ -144,11 +148,9 @@ function make_base_auth(user, pass) {
  * 
  * Functions to register the interaction with the user (search, page view and document view).
  * An additional function (registerCompleted) register if the user has completed the experiment. This event is predefined in the platform.
- * 
- * In the platform, it is used to avoid same users receiving the same experiments when they click in 'Paricipate in random experiment' 
+ * In the platform, it is used to prevent same users receiving the same experiments when they click in 'Participate in random experiment' 
  * from Monitoring::Users
- * 
- * In the client, the experimenter could avoid new interactions to be saved for example. The function 'checkIfCompleted' checks if the user has already
+ * In the client, the experimenter could prevent new interactions to be recorded. The function 'checkIfCompleted' checks if the user has already
  * completed the experiment (that is, if there already exists an event 'completed' for that user and experiment).  
  */ 
 
@@ -182,6 +184,10 @@ function registerCompleted(user) {
 	registerEvent(idexperiment, user, "STRING", "completed", "", {});
 }
 
+function registerExposure(user) {
+	registerEvent(idexperiment, user, "STRING", "exposure", "", {});
+}
+
 /*
  * @param idexperiment identifier of the experiment
  * @param idunit identifier of the user
@@ -201,10 +207,10 @@ function registerEvent(idexperiment, idunit, etype, ename, evalue, paramvalues) 
 		inputJson.ename = ename;
 		inputJson.evalue = evalue;
 		inputJson.paramvalues = paramvalues;
-		xhttp.open("POST", "Register", true);
-		xhttp.setRequestHeader("Content-Type", "application/json");
-		var inputTxt = JSON.stringify(inputJson);
-		xhttp.send(encodeURIComponent(inputTxt));
+		xhttp.open("POST", PLATFORM_URI+"/service/event/register");
+		xhttp.setRequestHeader("Content-Type", "text/plain");   //This same endpoint is also implemented to receive JSON, but if it is used
+		var inputTxt = JSON.stringify(inputJson);				//from the client-side as in this case, it may not work due to CORS (Cross-Origin Resource Sharing)
+		xhttp.send(inputTxt);
 	}
 }
 
@@ -217,7 +223,7 @@ function checkIfCompleted(){
 		}
 	};
 	if (user){
-		xhttp.open("GET", "CheckCompleted?idexperiment="+idexperiment+"&user="+user, true);
+		xhttp.open("GET", PLATFORM_URI + "/service/user/checkcompleted/"+idexperiment+"/"+user, true);
 		xhttp.send();
 	}
 }
