@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Basic client to run experiments with ElasticSearch as search engine. Experiment Color: tests two different colors in the results.</title>
+<title>Basic client to run experiments with ElasticSearch as search engine. Experiment Ranking+Color: tests two different colors and two different algorithms at the same time.</title>
 <link rel='stylesheet' href='css/search.css'>
 <script src='js/search.js'></script>
 </head>
-<body onload="init('5a6f175310801c4a963df2f1');">
+<body onload="init('5a79e60910801c4a960fcbc1');">
 <div id='searchblock' style='display: block;'>
 <div  class='outer'>
 	<div class='setup'>
@@ -27,7 +27,7 @@
 <div id='resultblock' style='display: none;'>
 <button id='resultback'>Back</button>
 	<div class='outer'>
-		<div class='resultsform'>
+		<div class='resultsform'>	
 			<img id='smalllogo' src='img/elasticlogo_small.png' hspace='20' >
 			<form onsubmit='event.preventDefault();searchResultWindow();'>
 				<input id='resultsinput' type='text' name='searchbox' size='50' value=''>

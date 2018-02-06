@@ -9,7 +9,7 @@
  * 
  */
 
-const PLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080/IREPlatform";
+const PLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080/APONE";
 const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";     //location of the ElasticSearch service to be used
 const ELASTIC_DOCTYPE = "cran"; 								  //collection indexed in ElasticSearch
 
@@ -160,7 +160,7 @@ function registerSearch(user, results, query) {
 	var queryResults = JSON.parse(results);
 	evalue.took = queryResults.took;
 	evalue.hits = queryResults.hits.total;
-	registerEvent(idexperiment, user, "JSON", "search", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "search", evalue, null);
 }
 
 function registerPageView(user, results, query, from) {
@@ -169,7 +169,7 @@ function registerPageView(user, results, query, from) {
 	evalue.hits = queryResults.hits.total;
 	evalue.query = query;
 	evalue.page = from / NRESULTS;
-	registerEvent(idexperiment, user, "JSON", "page", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "page", evalue, null);
 }
 
 function registerDocView(user, id, query, ranking) {
@@ -177,15 +177,15 @@ function registerDocView(user, id, query, ranking) {
 	evalue.iddoc = id;
 	evalue.query = query;
 	evalue.ranking = ranking;
-	registerEvent(idexperiment, user, "JSON", "click", evalue, {});
+	registerEvent(idexperiment, user, "JSON", "click", evalue, null);
 }
 
 function registerCompleted(user) {
-	registerEvent(idexperiment, user, "STRING", "completed", "", {});
+	registerEvent(idexperiment, user, "STRING", "completed", "", null);
 }
 
 function registerExposure(user) {
-	registerEvent(idexperiment, user, "STRING", "exposure", "", {});
+	registerEvent(idexperiment, user, "STRING", "exposure", "", null);
 }
 
 /*
@@ -206,7 +206,8 @@ function registerEvent(idexperiment, idunit, etype, ename, evalue, paramvalues) 
 		inputJson.etype = etype;
 		inputJson.ename = ename;
 		inputJson.evalue = evalue;
-		inputJson.paramvalues = paramvalues;
+		if (paramvalues != null)
+			inputJson.paramvalues = paramvalues;
 		xhttp.open("POST", PLATFORM_URI+"/service/event/register");
 		xhttp.setRequestHeader("Content-Type", "text/plain");   //This same endpoint is also implemented to receive JSON, but if it is used
 		var inputTxt = JSON.stringify(inputJson);				//from the client-side as in this case, it may not work due to CORS (Cross-Origin Resource Sharing)
