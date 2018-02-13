@@ -11,6 +11,8 @@ The first two experiments define different URLs per variant. The last experiment
 
 It is assumed that there is an instance of the platform running at [http://ireplatform.ewi.tudelft.nl:8080/APONE](http://ireplatform.ewi.tudelft.nl:8080/APONE), with those experiments defined. The instance of ElasticSearch used is running on the same server, and has the Cranfield documents indexed for demonstration purposes. Three instances of ClientE running in the same server serve as clients for those experiments. 
 
-The [platform user guide](https://marrerom.github.io/APONE/docs/APONEUserGuide.md) shows step by step how to set up the three experiments locally with the remote platform and ClientE installed locally, and contains additional information about the services provided by APONE. 
+The [platform user guide](https://marrerom.github.io/APONE/docs/APONEUserGuide.html) shows step by step how to set up the three experiments locally with the remote platform and ClientE installed locally, and contains additional information about the services provided by APONE. 
 
-APONE may also be installed locally. The [installations guide](https://marrerom.github.io/APONE/docs/installation.md) describes the process. 
+APONE may also be installed locally. The [installations guide](https://marrerom.github.io/APONE/docs/installation.html) describes the process.
+
+The ClientE repository is located at: [https://github.com/marrerom/ClientE](https://github.com/marrerom/ClientE)
