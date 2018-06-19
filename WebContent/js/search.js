@@ -1,35 +1,28 @@
 /**
- * Javascript methods shared by the clients of two different experiments: ColorExp (color.html), which varies 
- * the color of the search results, and RankingExp (ranking.html), which changes the ranking algorithm used in the queries.
+ * Web Search Engine used as support for three different experiments: ColorExp, which varies 
+ * the color of the search results, and RankingExp, which changes the ranking algorithm used in the queries, 
+ * and Ranking+Color, which varies both variables in a multivariate experiment.
  * The search engine used is ElasticSearch, located at ELASTIC_URI
  * The experimental platform, where the experiments are defined is located at PLATFORM_URI. 
  * The events (interaction with the user) are registered there.
+ * The Javascript library jsApone.js is used to interact with the experimental platform.
  * 
  * @author mmarrero
  * 
  */
 
-const PLATFORM_URI = "http://ireplatform.ewi.tudelft.nl:8080/APONE";
 const ELASTIC_URI = "http://ireplatform.ewi.tudelft.nl:9200";     //location of the ElasticSearch service to be used
 const ELASTIC_DOCTYPE = "cran"; 								  //collection indexed in ElasticSearch
 
 const NRESULTS = 10; //number of documents displayed per page
 const EXPDAYS = 60;  //cookies expiration time
 
-//identifier of the experiment defined in the platform. 
-//Remember to update this information in the HTML files (function 'init', in body onload event)
-var idexperiment; 
-
-//experimental parameters received as query parameteres in the URL
+//experimental variables
 var user;
 var index;
 var color;
 
-function init(idexp) {
-	idexperiment = idexp; //set the experiment identifier. It will be used to register events and in general to interact with the platform
-	setParameters(idexp); //read the parameters from the URL and set them in cookies (if they are already set, take the values from the cookies)
-	registerExposure(user);
-	
+function init() {
 	document.getElementById("docblock").style.display = "none";
 	document.getElementById("searchblock").style.display = "block";
 	document.getElementById("resultblock").style.display = "none";
@@ -45,81 +38,65 @@ function init(idexp) {
 		document.getElementById("searchblock").style.display = "block";
 		document.getElementById("resultblock").style.display = "none";
 	});
-
-	if (user){
-		document.getElementById("user").innerHTML = user;
-		checkIfCompleted();
-	}
-	else
-		document.getElementById("user").innerHTML = "not set";
+	
+	document.getElementById("searchbutton").disabled = true;	
+	apone = jsApone("http://localhost:8080/APONE", "5b27838bda0ed12d7dc20001"); // JSAPONE. Module creation
+	apone.getExperimentalConditions(function(expCond) {startExperiment(expCond)}); //JSAPONE. Get experimental conditions
 }
+
+/*
+ * When the experimental conditions have been received, the user can make queries
+ */
+function startExperiment(expCond){
+	var variables = expCond.variables;
+	index = variables.rankingAlg;
+	color = variables.linkColor;
+	user = expCond.idUnit;
+	document.getElementById("user").innerHTML = user;
+	document.getElementById("color").innerHTML = color;
+	document.getElementById("ranking").innerHTML = index;
+	document.getElementById("searchbutton").disabled = false; //Enable search button when the experiment is ready	
+}
+
 
 
 /*
- * COOKIES 
+ * REGISTER EVENTS
  * 
- * Save in cookies the parameters received in the URL. In this case, the identifier of the user, the ranking algorithm to use, 
- * and the link color to use. Next time the user access the same URL, this information will be set from the parameters, 
- * or from the cookies if there are no parameters in the URL. 
- * 
- * Note: The information in the cookies and the information in the query parameters in the URL could be different for different reasons. 
- * It is up to the experimenter to decide how to manage this. 
- */
-function setParameters(idexp){
-	user  = checkParam(idexp, "_idunit");
-	index = checkParam(idexp+"rankingAlg","rankingAlg");
-	color = checkParam(idexp+"linkColor","linkColor")
+ * Functions to register the interaction with the user (search, page view and document view).
+ */ 
+function registerSearch(user, results, query) {
+	var evalue = new Object();
+	evalue.query = query;
+	var queryResults = JSON.parse(results);
+	evalue.took = queryResults.took;
+	evalue.hits = queryResults.hits.total;
+	
+	apone.registerJSON("search", evalue, function(info) {console.log("search event registered")}, 
+			function(status) {console.log(status);});
 }
 
-function checkParam(cookiename, param) {
-	var urlsearch = window.location.search;
-	var value = null;
-	if (urlsearch){
-		value = getParameterFromURL(param);
-		if (value)
-			setCookie(cookiename,value,EXPDAYS);
-	}
-	if (!value) {
-		value = getCookieValue(cookiename);
-	}
-	return value;
+function registerPageView(user, results, query, from) {
+	var evalue = new Object();
+	var queryResults = JSON.parse(results);
+	evalue.hits = queryResults.hits.total;
+	evalue.query = query;
+	evalue.page = from / NRESULTS;
+	
+	apone.registerJSON("page", evalue, function(info) {console.log("page view event registered")}, 
+			function(status) {console.log(status);});
 }
 
-function getParameterFromURL(name) {
-	var query = window.location.search;
-	if (!query) return null;
-	query = decodeURIComponent(query);
-	var encoded = query.replace("?","");
-    var decoded = "?"+atob(encoded);
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(decoded);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2]);
+function registerDocView(user, id, query, ranking) {
+	var evalue = new Object();
+	evalue.iddoc = id;
+	evalue.query = query;
+	evalue.ranking = ranking;
+
+	apone.registerJSON("click", evalue, function(info) {console.log("doc view event registered")}, 
+			function(status) {console.log(status);});
 }
 
-function setCookie(cname, cvalue, exdays) {
-    var d = new Date();
-    d.setTime(d.getTime() + (exdays*24*60*60*1000));
-    var expires = "expires="+ d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-}
-
-function getCookieValue(cname) {
-	var name = cname + "=";
-	var decodedCookie = decodeURIComponent(document.cookie);
-	var ca = decodedCookie.split(';');
-	for (var i = 0; i < ca.length; i++) {
-		var c = ca[i];
-		while (c.charAt(0) == ' ') {
-			c = c.substring(1);
-		}
-		if (c.indexOf(name) == 0) {
-			return c.substring(name.length, c.length);
-		}
-	}
-	return null;
-}
 
 /*
  * GENERIC METHODS
@@ -143,91 +120,6 @@ function make_base_auth(user, pass) {
 	  return "Basic " + hash;
 }
 
-/*
- * REGISTER EVENTS
- * 
- * Functions to register the interaction with the user (search, page view and document view).
- * An additional function (registerCompleted) register if the user has completed the experiment. This event is predefined in the platform.
- * In the platform, it is used to prevent same users receiving the same experiments when they click in 'Participate in random experiment' 
- * from Monitoring::Users
- * In the client, the experimenter could prevent new interactions to be recorded. The function 'checkIfCompleted' checks if the user has already
- * completed the experiment (that is, if there already exists an event 'completed' for that user and experiment).  
- */ 
-
-function registerSearch(user, results, query) {
-	var evalue = new Object();
-	evalue.query = query;
-	var queryResults = JSON.parse(results);
-	evalue.took = queryResults.took;
-	evalue.hits = queryResults.hits.total;
-	registerEvent(idexperiment, user, "JSON", "search", evalue, null);
-}
-
-function registerPageView(user, results, query, from) {
-	var evalue = new Object();
-	var queryResults = JSON.parse(results);
-	evalue.hits = queryResults.hits.total;
-	evalue.query = query;
-	evalue.page = from / NRESULTS;
-	registerEvent(idexperiment, user, "JSON", "page", evalue, null);
-}
-
-function registerDocView(user, id, query, ranking) {
-	var evalue = new Object();
-	evalue.iddoc = id;
-	evalue.query = query;
-	evalue.ranking = ranking;
-	registerEvent(idexperiment, user, "JSON", "click", evalue, null);
-}
-
-function registerCompleted(user) {
-	registerEvent(idexperiment, user, "STRING", "completed", "", null);
-}
-
-function registerExposure(user) {
-	registerEvent(idexperiment, user, "STRING", "exposure", "", null);
-}
-
-/*
- * @param idexperiment identifier of the experiment
- * @param idunit identifier of the user
- * @param etype type of contents to be saved ("JSON", "STRING" or "BINARY")
- * @param ename name of the event (reserved names are 'exposure' and 'completed')
- * @param evalue contents to be saved in the format specified in etype
- * @param paramvalues if we use PlanOut to define the experiment, we will receive in the URL the parameters we defined in PlanOut with the corresponding 
- * values depending on the variant received. If we did't use PlanOut to define the experiment, this value will be an empty JSON object 
- */
-function registerEvent(idexperiment, idunit, etype, ename, evalue, paramvalues) {
-	if (user){
-		var xhttp = getXMLHttpRequest();
-		var inputJson = new Object();
-		inputJson.idunit = idunit;
-		inputJson.idconfig = idexperiment;
-		inputJson.etype = etype;
-		inputJson.ename = ename;
-		inputJson.evalue = evalue;
-		if (paramvalues != null)
-			inputJson.paramvalues = paramvalues;
-		xhttp.open("POST", PLATFORM_URI+"/service/event/register");
-		xhttp.setRequestHeader("Content-Type", "text/plain");   //This same endpoint is also implemented to receive JSON, but if it is used
-		var inputTxt = JSON.stringify(inputJson);				//from the client-side as in this case, it may not work due to CORS (Cross-Origin Resource Sharing)
-		xhttp.send(inputTxt);
-	}
-}
-
-function checkIfCompleted(){
-	var xhttp = getXMLHttpRequest();
-	xhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-			if (this.response == "true")
-				window.alert("Experiment already completed"); //or better, if this is true, don't send any event
-		}
-	};
-	if (user){
-		xhttp.open("GET", PLATFORM_URI + "/service/user/checkcompleted/"+idexperiment+"/"+user, true);
-		xhttp.send();
-	}
-}
 
 /*
  * SEARCH
@@ -264,7 +156,6 @@ function search(query, from) {
 	var param = getQueryBody(query, from); 
 	xhttp.send(param);
 }
-
 
 function getQueryBody(query, from) {
 	return "{\"highlight\":{\"fields\":{\"bibliography\":{},\"author\":{},\"body\":{},\"title\":{}}},\"size\":10,\"query\":{\"multi_match\":{\"query\":\""+query+"\",\"fields\":[\"body\",\"title\",\"bibliography\",\"author\"]}},\"_source\":[\"title\"],\"from\":"+from+"}";

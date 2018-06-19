@@ -4,13 +4,16 @@
 <meta charset="UTF-8">
 <title>Basic client to run experiments with ElasticSearch as search engine. </title>
 <link rel='stylesheet' href='css/search.css'>
+<script src='js/jsApone.js'></script>
 <script src='js/search.js'></script>
 </head>
-<body onload="init('5a79e60910801c4a960fcbc1');">
+<body onload="init();">
 <div id='searchblock' style='display: block;'>
 <div  class='outer'>
 	<div class='setup'>
-  		User id:<span id='user' class='user'>No user</span> 
+		[RankingAlg: <span id='ranking' class='ranking'>Not set</span>]
+		[Color: <span id='color' class='color'>Not set</span>]
+  		[User id:<span id='user' class='user'>No user</span>] 
 	</div>
 	<h1>IR Experimental Platform Client</h1>
 	<h2>Searching functionalities powered by Elastic Search</h2>
