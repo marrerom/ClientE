@@ -13,6 +13,6 @@ It is assumed that there is an instance of the platform running at [http://irepl
 
 The [platform user guide](https://marrerom.github.io/APONE/docs/APONEUserGuide.html) shows step by step how to set up the three experiments locally with the remote platform and ClientE installed locally, and contains additional information about the services provided by APONE. 
 
-APONE may also be installed locally. The [installations guide](https://marrerom.github.io/APONE/docs/installation.html) describes the process.
+APONE may also be installed locally. The [installation guide](https://marrerom.github.io/APONE/docs/installation.html) describes the process.
 
 The ClientE repository is located at: [https://github.com/marrerom/ClientE](https://github.com/marrerom/ClientE)
