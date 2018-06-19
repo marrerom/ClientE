@@ -7,7 +7,7 @@ The client offers a typical search web site powered by [ElasticSearch](https://w
 - Ranking: according to the parameter rankingAlg, set the ranking algorithm used to the ElasticSearch default algorithm (control) or the BM25 implementation (treatment).
 - Color+Ranking: full-factorial experiment with all the combinations of linkColor and rankingAlg.
 
-The first two experiments define different URLs per variant. The last experiment make use of a PlanOut script instead. The queries issued, the search pages loaded and the documents where the user clicked, are registered as events by calling web services offered by APONE through the Javascript library [jsApone](https://marrerom.github.io/APONE/docs/jsApone.html), included in the project in the folder 'resources'. 
+The first two experiments define different URLs per variant. The last experiment make use of a PlanOut script instead. The queries issued, the search pages loaded and the documents where the user clicked, are registered as events by calling web services offered by APONE through the Javascript library [jsApone](https://marrerom.github.io/APONE/docs/jsApone.html), included in the APONE project in the folder 'resources'. 
 
 It is assumed that there is an instance of the platform running at [http://ireplatform.ewi.tudelft.nl:8080/APONE](http://ireplatform.ewi.tudelft.nl:8080/APONE), with those experiments defined. The instance of ElasticSearch used is running on the same server, and has the Cranfield documents indexed for demonstration purposes. Three instances of ClientE running in the same server serve as clients for those experiments (ClientColor, ClientRanking, and ClientColorRanking). 
 
