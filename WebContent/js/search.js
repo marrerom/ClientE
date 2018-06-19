@@ -40,7 +40,7 @@ function init() {
 	});
 	
 	document.getElementById("searchbutton").disabled = true;	
-	apone = jsApone("http://localhost:8080/APONE", "5b27838bda0ed12d7dc20001"); // JSAPONE. Module creation
+	apone = jsApone("http://localhost:8080/APONE", "5b27838ada0ed12d7dc1fffd"); // JSAPONE. Module creation
 	apone.getExperimentalConditions(function(expCond) {startExperiment(expCond)}); //JSAPONE. Get experimental conditions
 }
 
